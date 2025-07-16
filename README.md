@@ -4,7 +4,7 @@
 SymfonyフレームワークとLINE Messaging APIを使用したチャットボットアプリケーション。
 ChatGPT (OpenAI) による自動応答機能、非同期メッセージ処理とMonologによるログ機能を実装。
 
-## アーキテクチャ構成
+## アーキテクチャ構成 
 
 ### 主要コンポーネント
 
@@ -51,7 +51,104 @@ DATABASE_URL="sqlite:///%kernel.project_dir%/var/data_%kernel.environment%.db"
 
 ## 開発・運用コマンド
 
-### 開発環境セットアップ
+### Docker環境での運用（推奨）
+
+#### 環境設定
+```bash
+# 環境変数ファイルをコピー
+cp .env.docker .env.local
+
+# .env.localを編集して必要な環境変数を設定
+# - LINE_ACCESS_TOKEN
+# - OPENAI_API_KEY
+# - POSTGRES_PASSWORD (本番環境では必ず変更)
+```
+
+#### 利用可能なComposeファイル
+- `compose.yaml`: 基本設定
+- `compose.override.yaml`: 開発環境用設定（自動読み込み）
+- `compose.prod.yaml`: 本番環境用設定（明示的に指定）
+
+#### サービス起動
+
+**開発環境での起動（推奨）:**
+```bash
+# 開発環境で起動（デバッグ機能有効、PostgreSQLポート公開）
+docker compose up -d
+
+# ログを確認
+docker compose logs -f nginx
+docker compose logs -f app
+docker compose logs -f worker
+
+# サービス停止
+docker compose down
+```
+
+**本番環境での起動:**
+```bash
+# 本番環境用設定で起動（compose.prod.yamlを使用）
+docker compose -f compose.yaml -f compose.prod.yaml up -d
+
+# または.env.localでAPP_ENV=prodに設定してから起動
+# compose.override.yamlを無効化して起動
+docker compose -f compose.yaml up -d
+```
+
+#### 開発・デバッグ用コマンド
+```bash
+# アプリケーションコンテナに入る
+docker compose exec app sh
+
+# データベースの状態確認
+docker compose exec app php bin/console messenger:stats
+
+# メッセージキューの確認
+docker compose exec app php bin/console messenger:failed:show
+
+# キャッシュクリア（開発環境）
+docker compose exec app php bin/console cache:clear --env=dev
+
+# キャッシュクリア（本番環境）
+docker compose exec app php bin/console cache:clear --env=prod
+
+# PostgreSQLデータベースに直接接続（開発環境のみ）
+docker compose exec database psql -U app -d app
+```
+
+#### 環境別設定の確認
+```bash
+# 現在の環境設定を確認
+docker compose exec app php bin/console about
+
+# 環境変数の確認
+docker compose exec app env | grep APP_ENV
+
+# 設定の詳細確認
+docker compose exec app php bin/console debug:config framework
+```
+
+#### Webアクセス
+- HTTP: http://localhost
+- HTTPS: https://localhost (SSL証明書設定後)
+- Webhook URL: http://localhost/webhook/line
+
+#### SSL証明書設定（本番環境）
+```bash
+# 自己署名証明書（開発用）
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout docker/nginx/ssl/server.key \
+  -out docker/nginx/ssl/server.crt \
+  -subj "/C=JP/ST=Tokyo/L=Tokyo/O=Development/CN=localhost"
+
+# 権限設定
+chmod 600 docker/nginx/ssl/server.key
+chmod 644 docker/nginx/ssl/server.crt
+```
+
+### 従来環境での開発（Docker未使用）
+
+#### 開発環境セットアップ
 ```bash
 # 依存関係インストール
 composer install
@@ -60,7 +157,7 @@ composer install
 php bin/console messenger:setup-transports
 ```
 
-### 非同期メッセージ処理
+#### 非同期メッセージ処理
 ```bash
 # メッセージワーカー起動（本番環境で必須）
 php bin/console messenger:consume async -vv
@@ -69,7 +166,7 @@ php bin/console messenger:consume async -vv
 php bin/console messenger:consume async -vv --limit=5
 ```
 
-### ログ確認
+#### ログ確認
 ```bash
 # 開発環境のログ確認
 tail -f var/log/dev.log
@@ -217,9 +314,9 @@ parameters:
 
 ### 技術的改善
 - Redis/RabbitMQによる本格的なメッセージキュー
-- Docker環境での運用
 - CI/CDパイプライン構築
 - 監視・メトリクス収集
+- コンテナオーケストレーション（Kubernetes等）
 
 ---
 
