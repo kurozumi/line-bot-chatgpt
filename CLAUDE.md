@@ -1,4 +1,4 @@
-# LINE Messaging API Chatbot - Claude Development Guide
+# LINE Bot × ChatGPT Integration - Claude Development Guide
 
 ## プロジェクト概要
 SymfonyフレームワークとLINE Messaging APIを使用したチャットボットアプリケーション。
@@ -27,6 +27,7 @@ ChatGPT (OpenAI) による自動応答機能、非同期メッセージ処理と
    - `config/packages/messenger.yaml` - メッセンジャー設定
    - `config/packages/monolog.yaml` - ログ設定
    - `config/packages/webhook.yaml` - Webhook設定
+   - `config/packages/chatgpt.yaml` - ChatGPT API設定
 
 ## 環境設定
 
@@ -114,6 +115,7 @@ grep ERROR var/log/dev.log
 - ChatGPT (GPT-3.5-turbo) による自動応答
 - 日本語対応のシステムプロンプト
 - エラー時のフォールバック機能
+- 設定ファイルによるモデル・パラメータ管理
 
 ### 4. 3段階応答システム
 - **即座の応答**: Reply Messageによる「考え中...」メッセージ
@@ -167,6 +169,7 @@ grep ERROR var/log/dev.log
    - `OPENAI_API_KEY`の設定確認
    - OpenAI APIの利用制限確認
    - ログでAPIエラーメッセージを確認
+   - `config/packages/chatgpt.yaml`の設定確認
 
 ### デバッグコマンド
 ```bash
@@ -179,6 +182,29 @@ php bin/console messenger:failed:show
 # キャッシュクリア
 php bin/console cache:clear
 ```
+
+## ChatGPT設定ファイル
+
+`config/packages/chatgpt.yaml`でChatGPTの動作をカスタマイズできます。
+
+```yaml
+parameters:
+    chatgpt:
+        model: 'gpt-3.5-turbo'
+        max_tokens: 1000
+        temperature: 0.7
+        system_message: 'あなたは親切で丁寧な日本語のアシスタントです。簡潔で分かりやすい返答を心がけてください。'
+        error_messages:
+            payment_required: 'OpenAIアカウントの支払い情報を確認してください。'
+            general_error: 'すみません、一時的に返答できません。しばらく経ってから再度お試しください。'
+```
+
+### 設定項目
+- `model`: 使用するChatGPTモデル（gpt-3.5-turbo、gpt-4等）
+- `max_tokens`: 最大トークン数
+- `temperature`: 応答の創造性（0.0-2.0）
+- `system_message`: システムプロンプト
+- `error_messages`: エラー時の返信メッセージ
 
 ## 今後の拡張予定
 
