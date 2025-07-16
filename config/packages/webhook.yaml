@@ -1,0 +1,6 @@
+framework:
+  webhook:
+    routing:
+      line:
+        service: App\Webhook\LineRequestParser
+        secret: '%env(LINE_ACCESS_TOKEN)%'
