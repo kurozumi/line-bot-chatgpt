@@ -1,7 +1,44 @@
 
+# Development environment overrides
+# This file is automatically loaded by Docker Compose in addition to compose.yaml
+
 services:
+  app:
+    environment:
+      - APP_ENV=dev
+      - APP_DEBUG=1
+    command: >
+      sh -c "
+        composer install &&
+        php bin/console cache:clear --env=dev &&
+        php bin/console doctrine:database:create --if-not-exists &&
+        php bin/console doctrine:schema:update --force &&
+        php bin/console messenger:setup-transports &&
+        php-fpm
+      "
+    volumes:
+      - .:/app
+      - /app/vendor
+      - /app/var
+
+  worker:
+    environment:
+      - APP_ENV=dev
+      - APP_DEBUG=1
+    command: >
+      sh -c "
+        composer install &&
+        php bin/console cache:clear --env=dev &&
+        php bin/console messenger:consume async -vv
+      "
+
 ###> doctrine/doctrine-bundle ###
   database:
     ports:
-      - "5432"
+      - "5432:5432"
+    volumes:
+      - database_data_dev:/var/lib/postgresql/data:rw
 ###< doctrine/doctrine-bundle ###
+
+volumes:
+  database_data_dev:
