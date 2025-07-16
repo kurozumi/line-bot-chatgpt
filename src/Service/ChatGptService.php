@@ -14,7 +14,9 @@ class ChatGptService
     public function __construct(
         #[Autowire('%env(OPENAI_API_KEY)%')]
         private readonly string $apiKey,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        #[Autowire('%chatgpt%')]
+        private readonly array $config
     ) {
         $this->client = (new Factory())->withApiKey($this->apiKey)->make();
     }
@@ -23,19 +25,19 @@ class ChatGptService
     {
         try {
             $response = $this->client->chat()->create([
-                'model' => 'gpt-3.5-turbo',
+                'model' => $this->config['model'],
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => 'あなたは親切で丁寧な日本語のアシスタントです。簡潔で分かりやすい返答を心がけてください。'
+                        'content' => $this->config['system_message']
                     ],
                     [
                         'role' => 'user',
                         'content' => $message
                     ]
                 ],
-                'max_tokens' => 1000,
-                'temperature' => 0.7,
+                'max_tokens' => $this->config['max_tokens'],
+                'temperature' => $this->config['temperature'],
             ]);
 
             $reply = $response->choices[0]->message->content;
@@ -43,7 +45,7 @@ class ChatGptService
             $this->logger->info('ChatGPT response generated', [
                 'user_message' => $message,
                 'response_length' => strlen($reply),
-                'model' => 'gpt-3.5-turbo'
+                'model' => $this->config['model']
             ]);
 
             return $reply;
@@ -54,10 +56,10 @@ class ChatGptService
             ]);
             
             if (str_contains($e->getMessage(), 'not active')) {
-                return 'OpenAIアカウントの支払い情報を確認してください。';
+                return $this->config['error_messages']['payment_required'];
             }
             
-            return 'すみません、一時的に返答できません。しばらく経ってから再度お試しください。';
+            return $this->config['error_messages']['general_error'];
         }
     }
 }

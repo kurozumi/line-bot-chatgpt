@@ -1,5 +1,5 @@
 {
-    "name": "akira/line-messaging-api-chatbot",
+    "name": "kurozumi/line-bot-chatgpt",
     "type": "project",
     "license": "MIT",
     "minimum-stability": "stable",
